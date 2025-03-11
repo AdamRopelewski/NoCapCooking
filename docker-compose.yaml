@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:17.4
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-no_cap_cooking}
+      POSTGRES_USER: ${POSTGRES_USER:-no_cap_cooking}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+    healthcheck:
+      test: [ "CMD-SHELL", "sh -c 'pg_isready -d ${POSTGRES_DB:-no_cap_cooking}'" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    restart: always
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
