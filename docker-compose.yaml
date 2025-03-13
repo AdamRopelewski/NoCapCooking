@@ -6,15 +6,18 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-no_cap_cooking}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
     healthcheck:
-      test: [ "CMD-SHELL", "sh -c 'pg_isready -d ${POSTGRES_DB:-no_cap_cooking}'" ]
+      test: [ "CMD-SHELL", "sh -c 'PGUSER=${POSTGRES_USER:-no_cap_cooking} pg_isready -d ${POSTGRES_DB:-no_cap_cooking}'" ]
       interval: 10s
       timeout: 3s
-      retries: 3
+      retries: 30
+
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
       - app-network
-    restart: always
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
   web:
     build: .
     ports:
