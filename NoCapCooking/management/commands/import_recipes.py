@@ -2,7 +2,7 @@ import json
 import os
 import glob
 from django.core.management.base import BaseCommand
-from models import Tag, Recipe
+from NoCapCooking.models import Tag, Recipe
 
 
 class Command(BaseCommand):
@@ -35,7 +35,7 @@ class Command(BaseCommand):
             return
 
         for json_file in json_files:
-            with open(json_file, "r", encoding="utf-8") as file:
+            with open(json_file, "r", encoding="utf-8-sig") as file:
                 recipes = json.load(file)
 
                 for recipe_data in recipes:
@@ -44,16 +44,12 @@ class Command(BaseCommand):
                         name=recipe_data["name"],
                         defaults={
                             "instructions": recipe_data.get("recipe", ""),
-                            "photo": recipe_data.get(
-                                "photo", ""
-                            ),  # If the model has a photo field
                         },
                     )
 
                     # Update instructions and photo if the recipe already exists
                     if not created:
                         recipe.instructions = recipe_data.get("recipe", "")
-                        recipe.photo = recipe_data.get("photo", "")
                         recipe.save()
 
                     # Add tags
