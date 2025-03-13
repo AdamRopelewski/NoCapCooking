@@ -1,0 +1,47 @@
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.pyc
+
+# Virtual environments
+env/
+venv/
+ENV/
+*.env
+
+# Django stuff:
+*.log
+*.pot
+*.pyc
+*.pyo
+*.db
+*.sqlite3
+
+# VSCode settings
+.vscode/
+
+# PyCharm settings
+.idea/
+
+# Local configuration files
+*.env
+
+# Node.js modules (if you're using npm or yarn)
+node_modules/
+
+# IDE / Editor directories
+.vscode/
+.idea/
+
+# Mac specific
+.DS_Store
+
+# Windows specific
+Thumbs.db
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
