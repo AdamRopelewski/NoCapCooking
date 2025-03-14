@@ -1,3 +1,8 @@
+*.json
+*.jpeg
+*.png
+*.jpg
+*.svg
 # Python
 *.pyc
 *.pyo
