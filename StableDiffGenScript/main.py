@@ -30,7 +30,7 @@ def generate_image_from_recipe(
     # Define the parameters for the request
     data = {
         "prompt": prompt,
-        "negative_prompt": "zoom, makro, multiple, (saturated:0.4), multiple plates, text, deformed, people",
+        "negative_prompt": "touching plates, (cutlery:0.4), zoom, makro, multiple, (saturated:0.4), egg, raw fish, (multiple plates), text, deformed, people",
         "styles": [],
         "seed": -1,
         "subseed": -1,
@@ -90,7 +90,7 @@ def generate_image_from_recipe(
             image.convert("RGB").save(
                 gen_img_name, "JPEG", quality=jpeg_quality
             )
-            print(f"Image saved as JPEG for {name}.")
+            print(f"Image saved as JPEG for {output_dir}/{name}.")
 
         else:
             print(f"No image data found for {name}.")
@@ -127,18 +127,21 @@ for filename in os.listdir(input_directory):
         os.makedirs(output_dir, exist_ok=True)
 
         # Process each recipe in the JSON file
+        images_generated_counter = 0
         for recipe in recipes_data:
             # Check if the image already exists
             if check_if_image_exists(recipe, output_dir):
-                print(f"\nImage already exists for {recipe['name']}.")
+                # print(f"\nImage already exists for {recipe['name']}.")
                 continue
             generate_image_from_recipe(recipe, output_dir, input_file_name)
+            images_generated_counter += 1
 
         # Ask user if they want to continue to the next file
-        user_input = input(
-            f"Processed {filename}. Do you want to continue to the next file? (y/n): "
-        )
-        if user_input.lower() != "y":
-            print("Exiting...")
-            break
+        if images_generated_counter > 0:
+            user_input = input(
+                f"Processed {filename}. Do you want to continue to the next file? (y/n): "
+            )
+            if user_input.lower() != "y":
+                print("Exiting...")
+                break
 print("All files processed.")
