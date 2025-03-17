@@ -9,6 +9,7 @@
 *.pyd
 __pycache__/
 *.pyc
+*.txt
 
 # Virtual environments
 env/
