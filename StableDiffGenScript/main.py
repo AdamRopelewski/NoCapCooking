@@ -16,6 +16,7 @@ input_directory = "json-input/"
 api_url = "http://127.0.0.1:7860/sdapi/v1/txt2img"
 
 
+
 # Function to generate image for a given recipe
 def generate_image_from_recipe(
     recipe, output_dir, input_file_name, jpeg_quality=50
@@ -81,8 +82,10 @@ def generate_image_from_recipe(
             )
             os.makedirs(output_dir, exist_ok=True)
             gen_img_name = (
-                f"{output_dir}/{input_file_without_extension}_{name}.jpg"
+                f"{output_dir}/{name}.jpg"
             )
+            gen_img_name = gen_img_name.replace(" ", "_")
+            gen_img_name = str.lower(gen_img_name)
             # Compress into jpeg
             image.convert("RGB").save(
                 gen_img_name, "JPEG", quality=jpeg_quality
@@ -98,6 +101,16 @@ def generate_image_from_recipe(
         print(response.text)
 
 
+def check_if_image_exists(recipe, output_dir):
+    if_exists = False
+    name = recipe["name"]
+    name = name.replace(" ", "_")
+    name = str.lower(name)
+    gen_img_name = f"{output_dir}/{name}.jpg"
+    if_exists = os.path.exists(gen_img_name)
+
+    return if_exists
+
 # Process all JSON files in the directory
 for filename in os.listdir(input_directory):
     if filename.endswith(".json"):
@@ -109,12 +122,16 @@ for filename in os.listdir(input_directory):
 
         # Create an output directory for each JSON file
         output_dir = os.path.join(
-            input_directory, f"output_{filename.split('.')[0]}"
+            input_directory, f"{filename.split('.')[0]}"
         )
         os.makedirs(output_dir, exist_ok=True)
 
         # Process each recipe in the JSON file
         for recipe in recipes_data:
+            # Check if the image already exists
+            if check_if_image_exists(recipe, output_dir):
+                print(f"\nImage already exists for {recipe['name']}.")
+                continue
             generate_image_from_recipe(recipe, output_dir, input_file_name)
 
         # Ask user if they want to continue to the next file
