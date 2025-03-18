@@ -39,23 +39,29 @@ class Command(BaseCommand):
                 recipes = json.load(file)
 
                 for recipe_data in recipes:
-                    # Create the recipe (including the photo field if it exists in the model)
                     recipe, created = Recipe.objects.get_or_create(
                         name=recipe_data["name"],
                         defaults={
+                            "cuisine": recipe_data.get("cuisine", ""),
+                            "photo": recipe_data.get("photo", ""),
                             "instructions": recipe_data.get("recipe", ""),
-                        },
+                        }
                     )
 
-                    # Update instructions and photo if the recipe already exists
                     if not created:
+                        recipe.cuisine = recipe_data.get("cuisine", "")
+                        recipe.photo = recipe_data.get("photo", "")
                         recipe.instructions = recipe_data.get("recipe", "")
                         recipe.save()
 
-                    # Add tags
-                    for tag_name in recipe_data.get("tags", []):
-                        tag, _ = Tag.objects.get_or_create(name=tag_name)
-                        recipe.tags.add(tag)
+                    for diet_name in recipe_data.get("diet", []):
+                        diet, _ = Diet.objects.get_or_create(name=diet_name)
+                        recipe.diet.add(diet)
+
+                    for ingredient_name in recipe_data.get("ingredients", []):
+                        ingredient, _ = Ingredient.objects.get_or_create(name=ingredient_name)
+                        recipe.ingredients.add(ingredient)
+
 
         self.stdout.write(
             self.style.SUCCESS(
