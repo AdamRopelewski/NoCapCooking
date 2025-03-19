@@ -42,7 +42,8 @@ def main():
 
     # Print the sorted list
     for json_file, count in file_counts:
-        print(f"{json_file}: {count} przepisów")
+        print(f"{json_file} - przepisów: {count}")
+    print(f"\nŁączna liczba przepisów: \t{sum(count for _, count in file_counts)}")
 
 if __name__ == "__main__":
     main()
