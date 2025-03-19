@@ -10,27 +10,28 @@ from io import BytesIO
 
 
 # Define the directory where the JSON files are located
-input_directory = "json-input/"
+input_directory = "stable_diff_prompts-jsons/"
 
 # Define the URL of the Stable Diffusion API endpoint
-# api_url = "http://127.0.0.1:7860/sdapi/v1/txt2img"
-api_url = "https://art.thedavesky.com/sdapi/v1/txt2img"
+api_url = "http://127.0.0.1:7860/sdapi/v1/txt2img"
+
 
 
 # Function to generate image for a given recipe
 def generate_image_from_recipe(
     recipe, output_dir, input_file_name, jpeg_quality=50
 ):
-    name = recipe["name"]
-    ingredients = ", ".join(recipe["ingredients"])
+    name = recipe.get("name")
 
-    # Create the prompt by incorporating the name and ingredients
-    prompt = f"top down distant view, one {name}, (plate:0.7), (icon:0.8), simple, {ingredients}"
+    prompt = (
+        f"top down distant view, (on round plate:1.2), (icon:0.4), (simple:0.3), one on plate "
+        + recipe.get("image_prompt") + "food on round plate"
+    )
 
     # Define the parameters for the request
     data = {
         "prompt": prompt,
-        "negative_prompt": "touching plates, (cutlery:0.4), zoom, makro, multiple, (saturated:0.4), egg, raw fish, (multiple plates), text, deformed, people",
+        "negative_prompt": "touching plates, (cutlery:0.6), zoom, makro, multiple, (saturated:0.2), (egg:1.1), raw fish, (multiple plates), text, deformed, people",
         "styles": [],
         "seed": -1,
         "subseed": -1,
@@ -40,7 +41,7 @@ def generate_image_from_recipe(
         "batch_size": 1,
         "n_iter": 1,
         "steps": 16,
-        "cfg_scale": 6,
+        "cfg_scale": 7,
         "width": 1024,
         "height": 1024,
         "restore_faces": False,
@@ -81,9 +82,7 @@ def generate_image_from_recipe(
                 input_file_without_extension[1:]
             )
             os.makedirs(output_dir, exist_ok=True)
-            gen_img_name = (
-                f"{output_dir}/{name}.jpg"
-            )
+            gen_img_name = f"{output_dir}/{name}.jpg"
             gen_img_name = gen_img_name.replace(" ", "_")
             gen_img_name = str.lower(gen_img_name)
             # Compress into jpeg
@@ -103,13 +102,14 @@ def generate_image_from_recipe(
 
 def check_if_image_exists(recipe, output_dir):
     if_exists = False
-    name = recipe["name"]
+    name = recipe.get("name")
     name = name.replace(" ", "_")
     name = str.lower(name)
     gen_img_name = f"{output_dir}/{name}.jpg"
     if_exists = os.path.exists(gen_img_name)
 
     return if_exists
+
 
 # Process all JSON files in the directory
 for filename in os.listdir(input_directory):
@@ -135,11 +135,11 @@ for filename in os.listdir(input_directory):
             images_generated_counter += 1
 
         # Ask user if they want to continue to the next file
-        if images_generated_counter > 0:
-            user_input = input(
-                f"Processed {filename}. Do you want to continue to the next file? (y/n): "
-            )
-            if user_input.lower() != "y":
-                print("Exiting...")
-                break
+        # if images_generated_counter > 0:
+        #     user_input = input(
+        #         f"Processed {filename}. Do you want to continue to the next file? (y/n): "
+        #     )
+        #     if user_input.lower() != "y":
+        #         print("Exiting...")
+        #         break
 print("All files processed.")
