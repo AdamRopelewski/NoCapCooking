@@ -1,70 +1,75 @@
-import json
 import os
-import glob
-from django.core.management.base import BaseCommand
-from NoCapCooking.models import Tag, Recipe
+import json
 
+from django.core.management.base import BaseCommand, CommandError
+from NoCapCooking.models import Photo, Ingredient, Cuisine, Diet, Recipe
+from django.db import transaction
 
 class Command(BaseCommand):
-    help = "Imports recipes from all JSON files in the specified directory"
+    help = 'Import recipes from JSON files in a given directory'
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "directory",
+            'json_dir',
             type=str,
-            help="Path to the directory containing JSON files",
+            help='Ścieżka do folderu zawierającego pliki JSON',
         )
 
-    def handle(self, *args, **kwargs):
-        directory = kwargs["directory"]
+    def handle(self, *args, **options):
+        json_dir = options['json_dir']
 
-        # Check if the directory exists
-        if not os.path.isdir(directory):
-            self.stdout.write(
-                self.style.ERROR("The provided path is not a directory!")
-            )
+        if not os.path.isdir(json_dir):
+            raise CommandError(f'Podana ścieżka "{json_dir}" nie jest katalogiem.')
+
+        # Pobierz listę plików *.json w katalogu
+        files = [os.path.join(json_dir, f) for f in os.listdir(json_dir) if f.lower().endswith('.json')]
+        if not files:
+            self.stdout.write(self.style.WARNING(f'Brak plików JSON w katalogu: {json_dir}'))
             return
 
-        # Find all .json files in the directory
-        json_files = glob.glob(os.path.join(directory, "*.json"))
+        for file_path in files:
+            self.stdout.write(f'Importowanie pliku: {file_path}')
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f'Błąd odczytu pliku {file_path}: {e}'))
+                continue
 
-        if not json_files:
-            self.stdout.write(
-                self.style.WARNING("No JSON files found in the directory!")
-            )
-            return
+            try:
+                with transaction.atomic():
+                    # Obsługa Photo
+                    # Zakładamy, że photo jest podany jako ścieżka do pliku np. "spaghetti_carbonara.jpg"
+                    photo_obj, created = Photo.objects.get_or_create(URL=data.get('photo'))
 
-        for json_file in json_files:
-            with open(json_file, "r", encoding="utf-8-sig") as file:
-                recipes = json.load(file)
+                    # Obsługa Cuisine
+                    cuisine_name = data.get('cuisine')
+                    cuisine_obj, created = Cuisine.objects.get_or_create(name=cuisine_name)
 
-                for recipe_data in recipes:
-                    recipe, created = Recipe.objects.get_or_create(
-                        name=recipe_data["name"],
-                        defaults={
-                            "cuisine": recipe_data.get("cuisine", ""),
-                            "photo": recipe_data.get("photo", ""),
-                            "instructions": recipe_data.get("recipe", ""),
-                        }
+                    # Utwórz/Załaduj Recipe
+                    recipe_name = data.get('name')
+                    instruction = data.get('recipe')
+                    recipe_obj = Recipe.objects.create(
+                        name=recipe_name,
+                        instruction=instruction,
+                        cuisine=cuisine_obj,
+                        photo=photo_obj
                     )
 
-                    if not created:
-                        recipe.cuisine = recipe_data.get("cuisine", "")
-                        recipe.photo = recipe_data.get("photo", "")
-                        recipe.instructions = recipe_data.get("recipe", "")
-                        recipe.save()
+                    # Obsługa Ingredient – lista stringów
+                    ingredients = data.get('ingredients', [])
+                    for ing_name in ingredients:
+                        ing_obj, created = Ingredient.objects.get_or_create(name=ing_name)
+                        recipe_obj.ingredient.add(ing_obj)
 
-                    for diet_name in recipe_data.get("diet", []):
-                        diet, _ = Diet.objects.get_or_create(name=diet_name)
-                        recipe.diet.add(diet)
+                    # Obsługa Diet – lista stringów
+                    diets = data.get('diet', [])
+                    for diet_name in diets:
+                        diet_obj, created = Diet.objects.get_or_create(name=diet_name)
+                        recipe_obj.diet.add(diet_obj)
 
-                    for ingredient_name in recipe_data.get("ingredients", []):
-                        ingredient, _ = Ingredient.objects.get_or_create(name=ingredient_name)
-                        recipe.ingredients.add(ingredient)
+                    recipe_obj.save()
 
-
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Successfully imported {len(json_files)} JSON files!"
-            )
-        )
+                    self.stdout.write(self.style.SUCCESS(f'Udało się zaimportować: {recipe_name}'))
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f'Błąd importu z pliku {file_path}: {e}'))
