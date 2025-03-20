@@ -1,0 +1,10 @@
+services:
+  web:
+    command: sleep infinity
+    ports: !reset []
+    volumes:
+      - ..:/workspaces:cached
+    restart: no
+
+  postgres:
+    restart: no

@@ -2,7 +2,7 @@ import os
 import json
 
 from django.core.management.base import BaseCommand, CommandError
-from NoCapCooking.models import Photo, Ingredient, Cuisine, Diet, Recipe
+from core.models import Photo, Ingredient, Cuisine, Diet, Recipe
 from django.db import transaction
 
 class Command(BaseCommand):

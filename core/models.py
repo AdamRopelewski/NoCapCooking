@@ -22,4 +22,4 @@ class Recipe(models.Model):
     instructions = models.TextField()
     cuisine = models.ForeignKey(Cuisine, on_delete=models.CASCADE) 
     diets = models.ManyToManyField(Diet)
-    photos = models.OneToOneField(Photo)    
+    photos = models.OneToOneField(Photo, on_delete=models.CASCADE)
