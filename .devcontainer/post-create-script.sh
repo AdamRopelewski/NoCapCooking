@@ -7,3 +7,5 @@ if [ ! -f .env ]; then
 fi
 
 python manage.py migrate
+
+echo ".env created"
