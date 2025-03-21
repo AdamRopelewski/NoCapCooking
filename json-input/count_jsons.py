@@ -29,9 +29,21 @@ def main():
         print("Brak plików JSON w bieżącym katalogu.")
         return
     
+    # Create an empty list to store tuples of (json_file, count)
+    file_counts = []
+
+    # Loop through the JSON files and count the items
     for json_file in json_files:
         count = count_items_in_json(json_file)
-        print(f"{json_file}: {count} item(ów)")
+        file_counts.append((json_file, count))  # Store the file and count as a tuple
+
+    # Sort the list of tuples by count in descending order
+    file_counts.sort(key=lambda x: x[1], reverse=True)
+
+    # Print the sorted list
+    for json_file, count in file_counts:
+        print(f"{json_file} - przepisów: {count}")
+    print(f"\nŁączna liczba przepisów: \t{sum(count for _, count in file_counts)}")
 
 if __name__ == "__main__":
     main()
