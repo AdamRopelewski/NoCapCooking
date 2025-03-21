@@ -20,8 +20,6 @@ services:
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD:-password}
     volumes:
       - postgres-data:/var/lib/postgresql/data
-    ports:
-      - "${DATABASE_PORT:-5432}:5432"
     networks:
       - backend
     healthcheck:
