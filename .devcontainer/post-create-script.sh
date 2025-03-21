@@ -1,6 +1,6 @@
 #!/bin/sh
 
-git config --global --add safe.directory /workspaces
+git config --global --add safe.directory /workspaces/NoCapCooking
 
 if [ ! -f .env ]; then
     cp .env.example .env
