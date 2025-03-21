@@ -17,6 +17,7 @@ api_url = "http://127.0.0.1:7860/sdapi/v1/txt2img"
 
 
 
+
 # Function to generate image for a given recipe
 def generate_image_from_recipe(
     recipe, output_dir, input_file_name, jpeg_quality=50
@@ -31,7 +32,7 @@ def generate_image_from_recipe(
     # Define the parameters for the request
     data = {
         "prompt": prompt,
-        "negative_prompt": "touching plates, (cutlery:0.6), zoom, makro, multiple, (saturated:0.2), (egg:1.1), raw fish, (multiple plates), text, deformed, people",
+        "negative_prompt": "touching plates, (cutlery:0.6), fork, spoon, knife, zoom, makro, multiple, (saturated:0.2), (egg:1.1), raw fish, eyes, head, (multiple plates), text, deformed, people, finger",
         "styles": [],
         "seed": -1,
         "subseed": -1,
