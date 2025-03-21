@@ -12,6 +12,7 @@ __pycache__/
 *.txt
 
 # Virtual environments
+.stable-diff-gen
 env/
 venv/
 ENV/
