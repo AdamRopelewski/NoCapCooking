@@ -8,6 +8,7 @@ __pycache__/
 
 StableDiffGenScript/*
 jsonFilesOld/*
+.stable-diff-gen/*
 
 # Distribution / packaging
 .Python
