@@ -43,7 +43,7 @@ def generate_tts(text, server_ip, server_port, output_file):
         return None
 
 def process_json_files(folder_path, server_ip, server_port):
-    output_root = "audio-input"
+    output_root = "audio-output"
     os.makedirs(output_root, exist_ok=True)
 
     for filename in os.listdir(folder_path):
