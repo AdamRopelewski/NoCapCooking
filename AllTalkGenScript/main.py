@@ -32,7 +32,7 @@ def generate_tts(text, server_ip, server_port, output_file):
     response = requests.post(url, data=payload)
     if response.status_code == 200:
         response_json = response.json()
-        download_url = f"http://{server_ip}:{server_port}{response_json.get("output_cache_url")}"
+        download_url = f"http://{server_ip}:{server_port}{response_json.get('output_cache_url')}"
         download_response = requests.get(download_url)
         if download_response.status_code != 200:
             print(f"Błąd podczas pobierania pliku: {download_url}")
@@ -71,7 +71,7 @@ def process_json_files(folder_path, server_ip, server_port):
                                 f"Plik {final_audio} już istnieje. Pomijanie."
                             )
                             continue
-                        text_input = f"{name.replace("_"," ")}. {recipe}"
+                        text_input = f"{name.replace('_',' ')}. {recipe}"
                         segments = split_text(text_input)
                         audio_files = []
                         for i, segment in enumerate(segments):
