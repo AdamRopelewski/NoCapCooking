@@ -59,6 +59,11 @@ def process_json_files(folder_path, server_ip, server_port):
                     name = entry.get('name', '').replace(" ", "_")
                     recipe = entry.get('recipe', '')
                     if name and recipe:
+                        # Konstruuj final_audio z małymi literami w nazwie pliku
+                        final_audio = os.path.join(json_output_folder, f"{name}.opus".lower())
+                        if os.path.isfile(final_audio):
+                            print(f"Plik {final_audio} już istnieje. Pomijanie.")
+                            continue
                         text_input = f"{name}. {recipe}"
                         segments = split_text(text_input)
                         audio_files = []
@@ -68,7 +73,6 @@ def process_json_files(folder_path, server_ip, server_port):
                             if audio_file:
                                 audio_files.append(audio_file)
                         if audio_files:
-                            final_audio = os.path.join(json_output_folder, f"{name}.opus")
                             combine_audio_files(audio_files, final_audio)
                             for file in audio_files:
                                 os.remove(file)
@@ -81,7 +85,7 @@ def combine_audio_files(audio_files, output_file):
             f.write(f"file '{os.path.relpath(file)}'\n")
     command = [
         'ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'file_list.txt',
-        '-c:a', 'libopus', '-b:a', '64k', '-ar', '48000', output_file
+        '-c:a', 'libopus', '-b:a', '48k', '-ar', '48000', output_file
     ]
     # subprocess.run(command)
     subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
