@@ -16,8 +16,11 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+
+app_name = 'core' 
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("api/", include("recipe.urls")),  # Including app URLs without repeating the namespace
 ]

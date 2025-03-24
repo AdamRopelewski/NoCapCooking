@@ -10,10 +10,6 @@ StableDiffGenScript/*
 jsonFilesOld/*
 .stable-diff-gen/*
 
-json-input/*.json
-audio-output/*
-
-
 # Distribution / packaging
 .Python
 build/
@@ -181,4 +177,6 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-
+json-input/*.json
+audio-output/*/*.opus
+images-output/*/*.jpg

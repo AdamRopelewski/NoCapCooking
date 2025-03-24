@@ -3,7 +3,7 @@ import json
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-from core.models import Photo, Ingredient, Cuisine, Diet, Recipe
+from core.models import Ingredient, Cuisine, Diet, Recipe
 
 
 class Command(BaseCommand):
@@ -56,11 +56,12 @@ class Command(BaseCommand):
             for recipe_data in recipes:
                 try:
                     with transaction.atomic():
-                        # Process Photo: using the 'image' field (expects a file path)
-                        photo_value = recipe_data.get("photo")
-                        photo_obj, _ = Photo.objects.get_or_create(
-                            image=photo_value
-                        )
+                        # Process Image: using the 'image' field (expects a file path)
+                        image_value = recipe_data.get("image")
+
+                        # Process Audio: using the 'audio' field (expects a file path)
+                        audio_value = recipe_data.get("audio")
+
 
                         # Process Cuisine
                         cuisine_name = recipe_data.get("cuisine")
@@ -73,7 +74,8 @@ class Command(BaseCommand):
                             name=recipe_data.get("name"),
                             cuisine=cuisine_obj,
                             recipe=recipe_data.get("recipe"),
-                            photo=photo_obj,
+                            image_path=image_value,
+                            audio_path=audio_value,
                         )
 
                         # Process Ingredients list
@@ -96,14 +98,16 @@ class Command(BaseCommand):
 
                         recipe_obj.save()
 
-                        self.stdout.write(
-                            self.style.SUCCESS(
-                                f"Successfully imported recipe: {recipe_obj.name}"
-                            )
-                        )
+                        # Dont print succes for each recipe
+
                 except Exception as e:
                     self.stdout.write(
                         self.style.ERROR(
                             f'Error importing recipe "{recipe_data.get("name", "Unknown")}": {e}'
                         )
                     )
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"Successfully imported file: {file_path}"
+                )
+            )

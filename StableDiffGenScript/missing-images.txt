@@ -1,0 +1,69 @@
+			Missing images:
+
+003_japanese.json:		Onigiri
+004_mexican.json:		Carne Guisada
+005_french.json:		Croissant
+007_indian.json:		Vegetable Biryani
+011_korean.json:		Bibimbap
+011_korean.json:		Kimchi
+011_korean.json:		Bulgogi
+011_korean.json:		Japchae
+011_korean.json:		Tteokbokki
+011_korean.json:		Samgyeopsal
+011_korean.json:		Kimchi Jjigae
+011_korean.json:		Soondubu Jjigae
+011_korean.json:		Haemul Pajeon
+011_korean.json:		Kimbap
+011_korean.json:		Dakgalbi
+011_korean.json:		Naengmyeon
+012_polish.json:		Bigos
+012_polish.json:		Flaki
+015_brazilian.json:		Arroz Carreteiro
+016_portuguese.json:		Cataplana de Mariscos
+019_israeli.json:		Shakshuka
+019_israeli.json:		Shakshuka with Spinach
+022_russian.json:		Buckwheat Kasha with Mushrooms
+024_peruvian.json:		Lomo Saltado
+024_peruvian.json:		Aji de Gallina
+024_peruvian.json:		Seco de Carne
+025_chilean.json:		Porotos Granados
+025_chilean.json:		Charquicán
+026_colombian.json:		Obleas
+027_egyptian.json:		Bamia
+027_egyptian.json:		Bamya bil Laham
+028_filipino.json:		Bulalo
+028_filipino.json:		Bicol Express
+033_jordanian.json:		Tabbouleh
+035_libyan.json:		Libyan Couscous
+035_libyan.json:		Libyan Rice with Spices
+037_venezuelan.json:		Spicy Venezuelan Shrimp Stew
+038_finnish.json:		Finnish Mushroom Risotto
+039_new_zealand.json:		New Zealand Seafood Chowder
+041_pakistani.json:		Pakistani Chicken Biryani
+041_pakistani.json:		Pakistani Beef Nihari
+042_bolivian.json:		Bolivian Quinoa Salad
+042_bolivian.json:		Bolivian Picante de Pollo
+042_bolivian.json:		Bolivian Fricasé
+042_bolivian.json:		Bolivian Lempira
+042_bolivian.json:		Bolivian Quinoa Pilaf
+043_laotian.json:		Crispy Lao Spring Rolls
+044_hawaiian.json:		Taro Leaf Stew
+044_hawaiian.json:		Octopus Luau
+045_belarussian.json:		Belarusian Cabbage Stew
+045_belarussian.json:		Traditional Belarusian Dumplings
+046_czech.json:		Czech Wild Mushroom Soup
+047_uruguayan.json:		Uruguayan Puchero
+047_uruguayan.json:		Vegetarian Uruguayan Pizza
+048_slovak.json:		Kapustnica
+052_algerian.json:		Algerian Spiced Lamb Stew
+052_algerian.json:		Algerian Chicken and Chickpea Stew
+052_algerian.json:		Algerian Spicy Beef Stew
+053_nepali.json:		Nepali Dal Bhat
+053_nepali.json:		Nepali Spicy Vegetable Curry
+054_bhutanese.json:		Bhutanese Phaksha Paa
+054_bhutanese.json:		Bhutanese Chicken Curry
+054_bhutanese.json:		Bhutanese Spicy Beef Stew
+054_bhutanese.json:		Bhutanese Lamb Curry
+054_bhutanese.json:		Bhutanese Mushroom and Chili Stew
+054_bhutanese.json:		Bhutanese Spiced Goat Curry
+055_argentinian.json:		Argentinian Humita en Chala
