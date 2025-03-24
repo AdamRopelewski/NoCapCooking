@@ -18,13 +18,6 @@ class Ingredient(models.Model):
         max_length=50, help_text="Name of the ingredient (e.g., Spaghetti)"
     )
 
-
-class Photo(models.Model):
-    image = models.ImageField(
-        upload_to="recipe_photos/", help_text="Photo representing the recipe"
-    )
-
-
 class Recipe(models.Model):
     name = models.CharField(
         max_length=100,
@@ -44,6 +37,11 @@ class Recipe(models.Model):
     recipe = models.TextField(
         help_text="Step-by-step instructions for preparing the recipe"
     )
-    photo = models.OneToOneField(
-        Photo, on_delete=models.CASCADE, help_text="Photo for the recipe"
+    image_path = models.TextField(
+        max_length=100,
+        help_text="Path for the photo of the recipe"
+    )
+    audio_path = models.TextField(
+        max_length=100,
+        help_text="Path for the audio TTS of the recipe"
     )
