@@ -1,1 +1,1 @@
-.env.example text eol=lf
+.devcontainer/post-create-script.sh text eol=lf
