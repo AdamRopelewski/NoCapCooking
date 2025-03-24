@@ -9,7 +9,7 @@ __pycache__/
 StableDiffGenScript/*
 jsonFilesOld/*
 .stable-diff-gen/*
-audio-output/*/*.opus
+
 # Distribution / packaging
 .Python
 build/
@@ -178,5 +178,5 @@ cython_debug/
 .pypirc
 
 json-input/*.json
-json-input-legacy/*.json
-images-output/*/*jpg
+audio-output/*/*.opus
+images-output/*/*.jpg
