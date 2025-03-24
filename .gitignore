@@ -179,3 +179,4 @@ cython_debug/
 
 json-input/*.json
 json-input-legacy/*.json
+images-output/*/*jpg
