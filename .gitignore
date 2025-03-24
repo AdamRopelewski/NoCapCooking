@@ -10,6 +10,8 @@
 __pycache__/
 *.pyc
 *.txt
+!missing-images.txt
+
 
 # Virtual environments
 .stable-diff-gen
@@ -17,6 +19,7 @@ env/
 venv/
 ENV/
 *.env
+audio-output/*
 
 # Django stuff:
 *.log
