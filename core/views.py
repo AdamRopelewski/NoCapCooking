@@ -35,9 +35,47 @@ def get_diets(request):
 
 
 def get_ingredients(request):
-    ingredients = Ingredient.objects.all()
-    serialized_ingredients = [tag_serializer(ingredient) for ingredient in ingredients]
-    return JsonResponse(serialized_ingredients, safe=False)
+    # Get parameters with defaults
+    page = request.GET.get('page', 1)
+    per_page = request.GET.get('per_page', 10)
+    search_string = request.GET.get('search', '')
+
+    try:
+        per_page = min(int(per_page), 100)  # Max 100 items per page
+    except ValueError:
+        per_page = 10
+
+    # Base queryset
+    ingredients = Ingredient.objects.all().order_by('name')
+
+    # Apply search filter if search string is provided
+    if search_string:
+        ingredients = ingredients.filter(name__icontains=search_string)
+
+    # Pagination
+    paginator = Paginator(ingredients, per_page)
+    
+    try:
+        ingredients_page = paginator.page(page)
+    except PageNotAnInteger:
+        ingredients_page = paginator.page(1)
+    except EmptyPage:
+        ingredients_page = paginator.page(paginator.num_pages)
+
+    # Serialize the results
+    serialized_ingredients = [tag_serializer(ingredient) for ingredient in ingredients_page]
+
+    return JsonResponse({
+        'results': serialized_ingredients,
+        'pagination': {
+            'total': paginator.count,
+            'per_page': per_page,
+            'current_page': ingredients_page.number,
+            'total_pages': paginator.num_pages,
+            'has_next': ingredients_page.has_next(),
+            'has_previous': ingredients_page.has_previous(),
+        }
+    })
 
 
 def get_recipes(request):
