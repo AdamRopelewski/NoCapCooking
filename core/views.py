@@ -2,7 +2,7 @@ from django.http import HttpResponse
 import datetime
 from core.models import Cuisine, Diet, Ingredient, Recipe
 from django.http import JsonResponse
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 
@@ -36,9 +36,9 @@ def get_diets(request):
 
 def get_ingredients(request):
     # Get parameters with defaults
-    page = request.GET.get('page', 1)
-    per_page = request.GET.get('per_page', 10)
-    search_string = request.GET.get('search', '')
+    page = request.GET.get("page", 1)
+    per_page = request.GET.get("per_page", 10)
+    search_string = request.GET.get("search", "")
 
     try:
         per_page = min(int(per_page), 100)  # Max 100 items per page
@@ -46,7 +46,7 @@ def get_ingredients(request):
         per_page = 10
 
     # Base queryset
-    ingredients = Ingredient.objects.all().order_by('name')
+    ingredients = Ingredient.objects.all().order_by("name")
 
     # Apply search filter if search string is provided
     if search_string:
@@ -54,7 +54,7 @@ def get_ingredients(request):
 
     # Pagination
     paginator = Paginator(ingredients, per_page)
-    
+
     try:
         ingredients_page = paginator.page(page)
     except PageNotAnInteger:
@@ -63,19 +63,23 @@ def get_ingredients(request):
         ingredients_page = paginator.page(paginator.num_pages)
 
     # Serialize the results
-    serialized_ingredients = [tag_serializer(ingredient) for ingredient in ingredients_page]
+    serialized_ingredients = [
+        tag_serializer(ingredient) for ingredient in ingredients_page
+    ]
 
-    return JsonResponse({
-        'results': serialized_ingredients,
-        'pagination': {
-            'total': paginator.count,
-            'per_page': per_page,
-            'current_page': ingredients_page.number,
-            'total_pages': paginator.num_pages,
-            'has_next': ingredients_page.has_next(),
-            'has_previous': ingredients_page.has_previous(),
+    return JsonResponse(
+        {
+            "results": serialized_ingredients,
+            "pagination": {
+                "total": paginator.count,
+                "per_page": per_page,
+                "current_page": ingredients_page.number,
+                "total_pages": paginator.num_pages,
+                "has_next": ingredients_page.has_next(),
+                "has_previous": ingredients_page.has_previous(),
+            },
         }
-    })
+    )
 
 
 def get_recipes(request):
@@ -131,6 +135,54 @@ def filter_recipes(request):
         "exclude_diet",
         "exclude_ingredient",
     ]
+
+    def sort_recipes(order_by_param, recipes):
+        allowed_order_fields = ["name", "cuisine", "ingredients_count"]
+        if order_by_param:
+            reverse = False
+            # Pozwól na przełączanie kolejności poprzez minus na początku
+            if order_by_param.startswith("-"):
+                reverse = True
+                order_by_clean = order_by_param[1:]
+            else:
+                order_by_clean = order_by_param
+
+            if order_by_clean not in allowed_order_fields:
+                return JsonResponse(
+                    {
+                        "error": f"Invalid order_by field: {order_by_param}. "
+                        f"Allowed fields are: {', '.join(allowed_order_fields)}"
+                    },
+                    status=400,
+                )
+
+            # W zależności od wybranego pola sortujemy
+            if order_by_clean == "ingredients_count":
+                # Dodajemy adnotację liczenia składników (dzięki Count z django.db.models)
+                recipes = recipes.annotate(
+                    ingredients_count=Count("ingredients")
+                )
+                order_field = "ingredients_count"
+            elif order_by_clean == "cuisine":
+                # Sortowanie alfabetycznie po nazwie kuchni
+                order_field = "cuisine__name"
+            elif order_by_clean == "diet":
+                # Sortowanie alfabetycznie po nazwie diety – zakładam, że można sortować po polu diet__name
+                order_field = "diet__name"
+            else:
+                # Domyślne: sortowanie po nazwie przepisu
+                order_field = "name"
+
+            # Ustawienie kolejności malejącej, jeśli minus na początku
+            if reverse:
+                order_field = "-" + order_field
+            recipes = recipes.order_by(order_field)
+        else:
+            # Domyślne sortowanie np. po id lub nazwie
+            recipes = recipes.order_by("id")
+        return recipes
+
+
 
     if not any(param in request.GET for param in filter_params):
         example_url = (
@@ -192,6 +244,11 @@ def filter_recipes(request):
     ingredients = request.GET.getlist("ingredient")
     for ingredient in ingredients:
         recipes = recipes.filter(ingredients__name=ingredient)
+
+    # Sortowanie przepisów na podstawie parametru order_by
+    order_by_param = request.GET.get("order_by")
+    if order_by_param:
+        recipes = sort_recipes(order_by_param, recipes)
 
     paginator = Paginator(recipes, per_page)
     try:
