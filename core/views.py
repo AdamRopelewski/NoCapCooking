@@ -41,7 +41,7 @@ def get_ingredients(request):
     search_string = request.GET.get("search", "")
 
     try:
-        per_page = min(int(per_page), 100)  # Max 100 items per page
+        per_page = min(int(per_page), 25)  # Max 100 items per page
     except ValueError:
         per_page = 10
 
@@ -88,7 +88,7 @@ def get_recipes(request):
     per_page = request.GET.get("per_page", 10)
 
     try:
-        per_page = min(int(per_page), 100)  # Max 100 items per page
+        per_page = min(int(per_page), 25)  # Max 100 items per page
     except ValueError:
         per_page = 10
 
@@ -127,13 +127,14 @@ def get_recipes(request):
 
 
 def filter_recipes(request):
-    filter_params = [
+    allowed_params = [
         "cuisine",
         "diet",
         "ingredient",
         "exclude_cuisine",
         "exclude_diet",
         "exclude_ingredient",
+        "order_by",
     ]
 
     def sort_recipes(order_by_param, recipes):
@@ -183,27 +184,43 @@ def filter_recipes(request):
         return recipes
 
 
+    # Dont check for empty filters, just return all recipes (pagination on)
 
-    if not any(param in request.GET for param in filter_params):
-        example_url = (
-            "/recipes/filter/?cuisine=italian&diet=vegetarian&ingredient=tomato"
-            "&exclude_ingredient=onion"
-        )
-        return JsonResponse(
-            {
-                "message": "No filters provided. Here's an example query:",
-                "example_query": example_url,
-                "available_filters": {
-                    "inclusive": ["cuisine", "diet", "ingredient"],
-                    "exclusive": [
-                        "exclude_cuisine",
-                        "exclude_diet",
-                        "exclude_ingredient",
-                    ],
-                },
-            },
-            status=400,
-        )
+
+    
+    # if not any(param in request.GET for param in allowed_params):
+    #     example_url = (
+    #         "recipes/filter/?ingredient=Butter&diet=Vegetarian&page=1&"
+    #         + "per_page=5&ingredient=Onions&cuisine=Polish&diet=Halal&"
+    #         + "order_by=-name&cuisine=Chinese"
+    #     )
+    #     return JsonResponse(
+    #         {
+    #             "message": "No filters provided. Here's an example query:",
+    #             "example_query": example_url,
+    #             "available_filters": {
+    #                 "inclusive": [
+    #                     "cuisine",
+    #                     "diet",
+    #                     "ingredient",
+    #                 ],
+    #                 "exclusive": [
+    #                     "exclude_cuisine",
+    #                     "exclude_diet",
+    #                     "exclude_ingredient",
+    #                 ],
+    #                 "order_by": [
+    #                     "name",
+    #                     "cuisine",
+    #                     "ingredients_count",
+    #                     "-name",
+    #                     "-cuisine",
+    #                     "-ingredients_count",
+    #                 ],
+    #             },
+    #         },
+    #         status=400,
+    #     )
 
     page = request.GET.get("page", 1)
     per_page = request.GET.get("per_page", 10)
