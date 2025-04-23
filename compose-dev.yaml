@@ -1,10 +1,7 @@
 services:
-  web:
+  devcontainer:
+    build: .
+    pull_policy: build
     command: sleep infinity
-    ports: !reset []
     volumes:
       - ..:/workspaces:cached
-    restart: no
-
-  postgres:
-    restart: no
