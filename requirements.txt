@@ -1,5 +1,4 @@
 django==5.1.7
-psycopg[binary]==3.2.6
 django-cors-headers==4.7.0
 python-dotenv==1.0.1
 pillow==11.1.0

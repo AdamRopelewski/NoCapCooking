@@ -1,10 +1,9 @@
 {
 	"name": "Python Development Environment",
 	"dockerComposeFile": [
-		"../compose.yaml",
 		"../compose-dev.yaml"
 	],
-	"service": "web",
+	"service": "devcontainer",
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 	"features": {
 		"ghcr.io/devcontainers/features/common-utils:2": {}
