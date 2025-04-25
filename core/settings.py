@@ -11,9 +11,11 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 import os
+import re
+from pathlib import Path
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
-from pathlib import Path
 
 
 # Load environment variables from .env file
@@ -27,30 +29,36 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DJANGO_DEBUG") == "True"
-
-ALLOWED_HOSTS = (
-    os.getenv("WEB_ALLOWED_HOSTS").split(";")
-    if "WEB_ALLOWED_HOSTS" in os.environ
-    else []
+SECRET_KEY = os.getenv(
+    "SECRET_KEY", "django-insecure-lgtohf2u90tdr_&0gnuc*wi6x_k=kee^_nnho)i7gjd9q5m8b7"
 )
 
-CORS_ALLOW_ALL_ORIGINS = True
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.getenv("DEBUG", "True") == "True"
+
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost").split(";")
+
+CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:4200").split(
+    ";"
+)
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    rf"^{p.scheme}://\w+\.{re.escape(p.hostname)}{f':{p.port}' if p.port else ''}$"
+    for p in map(urlparse, os.getenv("CORS_ALLOWED_ORIGIN_REGEXES", "").split(";"))
+    if p.hostname
+]
 
 
 # Application definition
 
 INSTALLED_APPS = [
-    "corsheaders",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "corsheaders",
     "core",
     "recipe",
 ]
@@ -93,7 +101,7 @@ WSGI_APPLICATION = "core.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.getenv("DATABASE_DIR"),
+        "NAME": os.getenv("DB_NAME", os.path.join(BASE_DIR, "db.sqlite3")),
     }
 }
 
