@@ -1,8 +1,6 @@
-from django.http import HttpResponse
-import datetime
 from core.models import Cuisine, Diet, Ingredient, Recipe
 from django.http import JsonResponse
-from django.db.models import Q, Count
+from django.db.models import Q, Count, OuterRef, Subquery, IntegerField
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 
@@ -140,14 +138,8 @@ def filter_recipes(request):
     def sort_recipes(order_by_param, recipes):
         allowed_order_fields = ["name", "cuisine", "ingredients_count"]
         if order_by_param:
-            reverse = False
-            # Pozwól na przełączanie kolejności poprzez minus na początku
-            if order_by_param.startswith("-"):
-                reverse = True
-                order_by_clean = order_by_param[1:]
-            else:
-                order_by_clean = order_by_param
-
+            reverse = order_by_param.startswith("-")
+            order_by_clean = order_by_param.lstrip("-")
             if order_by_clean not in allowed_order_fields:
                 return JsonResponse(
                     {
@@ -159,11 +151,27 @@ def filter_recipes(request):
 
             # W zależności od wybranego pola sortujemy
             if order_by_clean == "ingredients_count":
-                # Dodajemy adnotację liczenia składników (dzięki Count z django.db.models)
-                recipes = recipes.annotate(
-                    ingredients_count=Count("ingredients")
+                # 1) grab the auto‐generated through model for Recipe.ingredients
+                through = Recipe.ingredients.through
+
+                # 2) build a subquery that, for each recipe PK, counts ALL ingredients
+                total_count_sq = (
+                    through.objects.filter(recipe_id=OuterRef("pk"))
+                    .order_by()  # make sure we don’t inherit any default ordering
+                    .values("recipe_id")  # group by recipe_id
+                    .annotate(cnt=Count("ingredient_id"))
+                    .values("cnt")  # pull out the count
                 )
+
+                # 3) annotate the main queryset with that subquery
+                recipes = recipes.annotate(
+                    ingredients_count=Subquery(
+                        total_count_sq, output_field=IntegerField()
+                    )
+                )
+
                 order_field = "ingredients_count"
+
             elif order_by_clean == "cuisine":
                 # Sortowanie alfabetycznie po nazwie kuchni
                 order_field = "cuisine__name"
@@ -177,17 +185,16 @@ def filter_recipes(request):
             # Ustawienie kolejności malejącej, jeśli minus na początku
             if reverse:
                 order_field = "-" + order_field
+
             recipes = recipes.order_by(order_field)
         else:
             # Domyślne sortowanie np. po id lub nazwie
             recipes = recipes.order_by("id")
-        return recipes
 
+        return recipes
 
     # Dont check for empty filters, just return all recipes (pagination on)
 
-
-    
     # if not any(param in request.GET for param in allowed_params):
     #     example_url = (
     #         "recipes/filter/?ingredient=Butter&diet=Vegetarian&page=1&"
