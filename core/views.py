@@ -1,299 +1,255 @@
-from core.models import Cuisine, Diet, Ingredient, Recipe
+"""
+Moduł widoków do obsługi API przepisów kulinarnych.
+"""
+
+from typing import List, Optional
 from django.http import JsonResponse
-from django.db.models import Q, Count, OuterRef, Subquery, IntegerField
+from django.views import View
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models import Count, OuterRef, Subquery, IntegerField
+
+from core.models import Cuisine, Diet, Ingredient, Recipe
+
+# Stałe
+DEFAULT_PER_PAGE = 10
+MAX_PER_PAGE = 25
+FILTER_MAX_PER_PAGE = 10
 
 
-def recipe_serializer(recipe):
+def clamp_int(
+    value: Optional[str],
+    default: int,
+    min_value: int = 1,
+    max_value: Optional[int] = None,
+) -> int:
+    """
+    Bezpiecznie konwertuje parametr zapytania na int,
+    ograniczając wartość między min_value a max_value.
+    """
+    try:
+        iv = int(value)
+        if iv < min_value:
+            return default
+        if max_value and iv > max_value:
+            return max_value
+        return iv
+    except (TypeError, ValueError):
+        return default
+
+
+def get_pagination_page(paginator: Paginator, page_number: Optional[str]):
+    """
+    Zwraca stronę wyników z paginatora,
+    obsługując nieprawidłowy lub brakujący numer strony.
+    """
+    try:
+        return paginator.page(page_number)
+    except PageNotAnInteger:
+        return paginator.page(1)
+    except EmptyPage:
+        return paginator.page(paginator.num_pages)
+
+
+def json_paginated_response(
+    items: List, paginator: Paginator, page_obj
+) -> JsonResponse:
+    """
+    Buduje jednolitą odpowiedź JSON dla paginowanych endpointów.
+    """
+    return JsonResponse(
+        {
+            "results": items,
+            "pagination": {
+                "total": paginator.count,
+                "per_page": paginator.per_page,
+                "current_page": page_obj.number,
+                "total_pages": paginator.num_pages,
+                "has_next": page_obj.has_next(),
+                "has_previous": page_obj.has_previous(),
+            },
+        }
+    )
+
+
+def list_cuisines(request):
+    """
+    Zwraca listę nazw wszystkich kuchni.
+    """
+    names = list(Cuisine.objects.values_list("name", flat=True))
+    return JsonResponse(names, safe=False)
+
+
+def list_diets(request):
+    """
+    Zwraca listę nazw wszystkich diet.
+    """
+    names = list(Diet.objects.values_list("name", flat=True))
+    return JsonResponse(names, safe=False)
+
+
+def list_ingredients(request):
+    """
+    Zwraca paginowaną listę nazw składników,
+    z opcjonalnym filtrowaniem po wyszukiwanym ciągu.
+    """
+    page = request.GET.get("page")
+    per_page = clamp_int(
+        request.GET.get("per_page"), DEFAULT_PER_PAGE, max_value=MAX_PER_PAGE
+    )
+    search = request.GET.get("search", "")
+
+    qs = Ingredient.objects.order_by("name")
+    if search:
+        qs = qs.filter(name__icontains=search)
+
+    paginator = Paginator(qs.values_list("name", flat=True), per_page)
+    page_obj = get_pagination_page(paginator, page)
+    items = list(page_obj.object_list)
+
+    return json_paginated_response(items, paginator, page_obj)
+
+
+def serialize_recipe(recipe: Recipe) -> dict:
+    """
+    Serializuje instancję Recipe do słownika JSON-owalnego.
+    """
     return {
         "name": recipe.name,
-        "cuisine": tag_serializer(recipe.cuisine) if recipe.cuisine else None,
-        "diets": [tag_serializer(d) for d in recipe.diet.all()],
-        "ingredients": [tag_serializer(i) for i in recipe.ingredients.all()],
+        "cuisine": recipe.cuisine.name if recipe.cuisine else None,
+        "diets": [d.name for d in recipe.diet.all()],
+        "ingredients": [i.name for i in recipe.ingredients.all()],
         "recipe": recipe.recipe,
         "image_path": recipe.image_path,
         "audio_path": recipe.audio_path,
     }
 
 
-def tag_serializer(tag):
-    return tag.name
+class RecipeListView(View):
+    """
+    Widok zwracający listę wszystkich przepisów, paginowaną.
+    """
+
+    def get(self, request):
+        """
+        Obsługuje GET: zwraca paginowaną listę przepisów.
+        """
+        page = request.GET.get("page")
+        per_page = clamp_int(
+            request.GET.get("per_page"), DEFAULT_PER_PAGE, max_value=MAX_PER_PAGE
+        )
+
+        qs = (
+            Recipe.objects.select_related("cuisine")
+            .prefetch_related("diet", "ingredients")
+            .distinct()
+            .order_by("id")
+        )
+
+        paginator = Paginator(qs, per_page)
+        page_obj = get_pagination_page(paginator, page)
+        items = [serialize_recipe(r) for r in page_obj.object_list]
+
+        return json_paginated_response(items, paginator, page_obj)
 
 
-def get_cuisines(request):
-    cuisines = Cuisine.objects.all()
-    serialized_cuisines = [tag_serializer(cuisine) for cuisine in cuisines]
-    return JsonResponse(serialized_cuisines, safe=False)
+class RecipeFilterView(View):
+    """
+    Widok do filtrowania, sortowania i paginacji przepisów.
+    """
 
+    def get(self, request):
+        """
+        Obsługuje GET: filtruje i sortuje przepisy na podstawie parametrów zapytania.
+        """
+        page = request.GET.get("page")
+        per_page = clamp_int(
+            request.GET.get("per_page"), DEFAULT_PER_PAGE, max_value=FILTER_MAX_PER_PAGE
+        )
 
-def get_diets(request):
-    diets = Diet.objects.all()
-    serialized_diets = [tag_serializer(diet) for diet in diets]
-    return JsonResponse(serialized_diets, safe=False)
+        qs = (
+            Recipe.objects.select_related("cuisine")
+            .prefetch_related("diet", "ingredients")
+            .distinct()
+        )
 
+        # Filtry inkluzywne
+        cuisines = request.GET.getlist("cuisine")
+        if cuisines:
+            qs = qs.filter(cuisine__name__in=cuisines)
 
-def get_ingredients(request):
-    # Get parameters with defaults
-    page = request.GET.get("page", 1)
-    per_page = request.GET.get("per_page", 10)
-    search_string = request.GET.get("search", "")
+        diets = request.GET.getlist("diet")
+        for diet in diets:
+            qs = qs.filter(diet__name=diet)
 
-    try:
-        per_page = min(int(per_page), 25)  # Max 100 items per page
-    except ValueError:
-        per_page = 10
+        ingredients = request.GET.getlist("ingredient")
+        for ing in ingredients:
+            qs = qs.filter(ingredients__name=ing)
 
-    # Base queryset
-    ingredients = Ingredient.objects.all().order_by("name")
+        # Filtry ekskluzywne
+        exclude_cuisines = request.GET.getlist("exclude_cuisine")
+        if exclude_cuisines:
+            qs = qs.exclude(cuisine__name__in=exclude_cuisines)
 
-    # Apply search filter if search string is provided
-    if search_string:
-        ingredients = ingredients.filter(name__icontains=search_string)
+        exclude_diets = request.GET.getlist("exclude_diet")
+        if exclude_diets:
+            qs = qs.exclude(diet__name__in=exclude_diets)
 
-    # Pagination
-    paginator = Paginator(ingredients, per_page)
+        exclude_ingredients = request.GET.getlist("exclude_ingredient")
+        if exclude_ingredients:
+            qs = qs.exclude(ingredients__name__in=exclude_ingredients)
 
-    try:
-        ingredients_page = paginator.page(page)
-    except PageNotAnInteger:
-        ingredients_page = paginator.page(1)
-    except EmptyPage:
-        ingredients_page = paginator.page(paginator.num_pages)
-
-    # Serialize the results
-    serialized_ingredients = [
-        tag_serializer(ingredient) for ingredient in ingredients_page
-    ]
-
-    return JsonResponse(
-        {
-            "results": serialized_ingredients,
-            "pagination": {
-                "total": paginator.count,
-                "per_page": per_page,
-                "current_page": ingredients_page.number,
-                "total_pages": paginator.num_pages,
-                "has_next": ingredients_page.has_next(),
-                "has_previous": ingredients_page.has_previous(),
-            },
-        }
-    )
-
-
-def get_recipes(request):
-    # Pagination parameters
-    page = request.GET.get("page", 1)
-    per_page = request.GET.get("per_page", 10)
-
-    try:
-        per_page = min(int(per_page), 25)  # Max 100 items per page
-    except ValueError:
-        per_page = 10
-
-    query = Q()
-    recipes = (
-        Recipe.objects.filter(query)
-        .select_related("cuisine")
-        .prefetch_related("diet", "ingredients")
-        .distinct()
-    )
-
-    paginator = Paginator(recipes, per_page)
-
-    try:
-        recipes_page = paginator.page(page)
-    except PageNotAnInteger:
-        recipes_page = paginator.page(1)
-    except EmptyPage:
-        recipes_page = paginator.page(paginator.num_pages)
-
-    serialized_recipes = [recipe_serializer(recipe) for recipe in recipes_page]
-
-    return JsonResponse(
-        {
-            "results": serialized_recipes,
-            "pagination": {
-                "total": paginator.count,
-                "per_page": per_page,
-                "current_page": recipes_page.number,
-                "total_pages": paginator.num_pages,
-                "has_next": recipes_page.has_next(),
-                "has_previous": recipes_page.has_previous(),
-            },
-        }
-    )
-
-
-def filter_recipes(request):
-    allowed_params = [
-        "cuisine",
-        "diet",
-        "ingredient",
-        "exclude_cuisine",
-        "exclude_diet",
-        "exclude_ingredient",
-        "order_by",
-    ]
-
-    def sort_recipes(order_by_param, recipes):
-        allowed_order_fields = ["name", "cuisine", "ingredients_count"]
-        if order_by_param:
-            reverse = order_by_param.startswith("-")
-            order_by_clean = order_by_param.lstrip("-")
-            if order_by_clean not in allowed_order_fields:
-                return JsonResponse(
-                    {
-                        "error": f"Invalid order_by field: {order_by_param}. "
-                        f"Allowed fields are: {', '.join(allowed_order_fields)}"
-                    },
-                    status=400,
-                )
-
-            # W zależności od wybranego pola sortujemy
-            if order_by_clean == "ingredients_count":
-                # 1) grab the auto‐generated through model for Recipe.ingredients
-                through = Recipe.ingredients.through
-
-                # 2) build a subquery that, for each recipe PK, counts ALL ingredients
-                total_count_sq = (
-                    through.objects.filter(recipe_id=OuterRef("pk"))
-                    .order_by()  # make sure we don’t inherit any default ordering
-                    .values("recipe_id")  # group by recipe_id
-                    .annotate(cnt=Count("ingredient_id"))
-                    .values("cnt")  # pull out the count
-                )
-
-                # 3) annotate the main queryset with that subquery
-                recipes = recipes.annotate(
-                    ingredients_count=Subquery(
-                        total_count_sq, output_field=IntegerField()
-                    )
-                )
-
-                order_field = "ingredients_count"
-
-            elif order_by_clean == "cuisine":
-                # Sortowanie alfabetycznie po nazwie kuchni
-                order_field = "cuisine__name"
-            elif order_by_clean == "diet":
-                # Sortowanie alfabetycznie po nazwie diety – zakładam, że można sortować po polu diet__name
-                order_field = "diet__name"
-            else:
-                # Domyślne: sortowanie po nazwie przepisu
-                order_field = "name"
-
-            # Ustawienie kolejności malejącej, jeśli minus na początku
-            if reverse:
-                order_field = "-" + order_field
-
-            recipes = recipes.order_by(order_field)
+        # Sortowanie
+        order_by = request.GET.get("order_by")
+        if order_by:
+            try:
+                qs = apply_ordering(qs, order_by)
+            except ValueError as e:
+                return JsonResponse({"error": str(e)}, status=400)
         else:
-            # Domyślne sortowanie np. po id lub nazwie
-            recipes = recipes.order_by("id")
+            qs = qs.order_by("id")
 
-        return recipes
+        paginator = Paginator(qs, per_page)
+        page_obj = get_pagination_page(paginator, page)
+        items = [serialize_recipe(r) for r in page_obj.object_list]
 
-    # Dont check for empty filters, just return all recipes (pagination on)
+        return json_paginated_response(items, paginator, page_obj)
 
-    # if not any(param in request.GET for param in allowed_params):
-    #     example_url = (
-    #         "recipes/filter/?ingredient=Butter&diet=Vegetarian&page=1&"
-    #         + "per_page=5&ingredient=Onions&cuisine=Polish&diet=Halal&"
-    #         + "order_by=-name&cuisine=Chinese"
-    #     )
-    #     return JsonResponse(
-    #         {
-    #             "message": "No filters provided. Here's an example query:",
-    #             "example_query": example_url,
-    #             "available_filters": {
-    #                 "inclusive": [
-    #                     "cuisine",
-    #                     "diet",
-    #                     "ingredient",
-    #                 ],
-    #                 "exclusive": [
-    #                     "exclude_cuisine",
-    #                     "exclude_diet",
-    #                     "exclude_ingredient",
-    #                 ],
-    #                 "order_by": [
-    #                     "name",
-    #                     "cuisine",
-    #                     "ingredients_count",
-    #                     "-name",
-    #                     "-cuisine",
-    #                     "-ingredients_count",
-    #                 ],
-    #             },
-    #         },
-    #         status=400,
-    #     )
 
-    page = request.GET.get("page", 1)
-    per_page = request.GET.get("per_page", 10)
-    try:
-        per_page = min(int(per_page), 10)
-    except ValueError:
-        per_page = 5
+def apply_ordering(qs, order_by: str):
+    """
+    Zastosuj kolejność dla querysetu przepisów na podstawie dozwolonych pól:
+    name, cuisine, diet, ingredients_count.
+    Prefix '-' dla porządku malejącego.
+    """
+    allowed = {
+        "name": "name",
+        "cuisine": "cuisine__name",
+        "diet": "diet__name",
+        "ingredients_count": None,
+    }
+    reverse = order_by.startswith("-")
+    key = order_by.lstrip("-")
+    if key not in allowed:
+        raise ValueError(
+            f"Nieprawidłowe pole order_by: {order_by}. "
+            f"Dozwolone pola: {', '.join(allowed.keys())}"
+        )
 
-    base_query = Q()
-    cuisines = request.GET.getlist("cuisine")
-    if cuisines:
-        base_query &= Q(cuisine__name__in=cuisines)
+    if key == "ingredients_count":
+        through = Recipe.ingredients.through
+        count_sq = (
+            through.objects.filter(recipe_id=OuterRef("pk"))
+            .values("recipe_id")
+            .annotate(cnt=Count("ingredient_id"))
+            .values("cnt")
+        )
+        qs = qs.annotate(
+            ingredients_count=Subquery(count_sq, output_field=IntegerField())
+        )
+        field = "ingredients_count"
+    else:
+        field = allowed[key]
 
-    exclude_cuisines = request.GET.getlist("exclude_cuisine")
-    if exclude_cuisines:
-        base_query &= ~Q(cuisine__name__in=exclude_cuisines)
-
-    exclude_diets = request.GET.getlist("exclude_diet")
-    if exclude_diets:
-        base_query &= ~Q(diet__name__in=exclude_diets)
-
-    exclude_ingredients = request.GET.getlist("exclude_ingredient")
-    if exclude_ingredients:
-        base_query &= ~Q(ingredients__name__in=exclude_ingredients)
-
-    recipes = (
-        Recipe.objects.filter(base_query)
-        .select_related("cuisine")
-        .prefetch_related("diet", "ingredients")
-        .distinct()
-        .order_by("id")
-    )
-
-    diets = request.GET.getlist("diet")
-    for diet in diets:
-        recipes = recipes.filter(diet__name=diet)
-
-    ingredients = request.GET.getlist("ingredient")
-    for ingredient in ingredients:
-        recipes = recipes.filter(ingredients__name=ingredient)
-
-    # Sortowanie przepisów na podstawie parametru order_by
-    order_by_param = request.GET.get("order_by")
-    if order_by_param:
-        recipes = sort_recipes(order_by_param, recipes)
-
-    paginator = Paginator(recipes, per_page)
-    try:
-        recipes_page = paginator.page(page)
-    except PageNotAnInteger:
-        recipes_page = paginator.page(1)
-    except EmptyPage:
-        recipes_page = paginator.page(paginator.num_pages)
-
-    serialized_recipes = [recipe_serializer(recipe) for recipe in recipes_page]
-
-    return JsonResponse(
-        {
-            "results": serialized_recipes,
-            "pagination": {
-                "total": paginator.count,
-                "per_page": per_page,
-                "current_page": recipes_page.number,
-                "total_pages": paginator.num_pages,
-                "has_next": recipes_page.has_next(),
-                "has_previous": recipes_page.has_previous(),
-            },
-        }
-    )
+    if reverse:
+        field = f"-{field}"
+    return qs.order_by(field)

@@ -1,16 +1,16 @@
 from django.urls import path
 from core.views import (
-    get_cuisines,
-    get_ingredients,
-    get_diets,
-    get_recipes,
-    filter_recipes,
+    list_cuisines,
+    list_diets,
+    list_ingredients,
+    RecipeListView,
+    RecipeFilterView,
 )
 
 urlpatterns = [
-    path("cuisines/", get_cuisines, name="get_cuisines"),
-    path("diets/", get_diets, name="get_diets"),
-    path("ingredients/", get_ingredients, name="get_ingedients"),
-    path("recipes/", get_recipes, name="get_recipes"),
-    path("recipes/filter/", filter_recipes, name="filter_recipes"),
+    path("cuisines/", list_cuisines, name="list_cuisines"),
+    path("diets/", list_diets, name="list_diets"),
+    path("ingredients/", list_ingredients, name="list_ingredients"),
+    path("recipes/", RecipeListView.as_view(), name="recipe_list"),
+    path("recipes/filter/", RecipeFilterView.as_view(), name="recipe_filter"),
 ]
