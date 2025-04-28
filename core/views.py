@@ -25,6 +25,17 @@ def clamp_int(
     """
     Bezpiecznie konwertuje parametr zapytania na int,
     ograniczając wartość między min_value a max_value.
+    
+    :param value: Wartość do konwersji na liczbę całkowitą
+    :type value: Optional[str]
+    :param default: Domyślna wartość używana gdy konwersja nie powiedzie się
+    :type default: int
+    :param min_value: Minimalna dozwolona wartość, domyślnie 1
+    :type min_value: int, optional
+    :param max_value: Maksymalna dozwolona wartość, domyślnie None
+    :type max_value: Optional[int], optional
+    :return: Przekonwertowana i ograniczona wartość liczbowa
+    :rtype: int
     """
     try:
         iv = int(value)
@@ -41,6 +52,13 @@ def get_pagination_page(paginator: Paginator, page_number: Optional[str]):
     """
     Zwraca stronę wyników z paginatora,
     obsługując nieprawidłowy lub brakujący numer strony.
+    
+    :param paginator: Obiekt paginatora Django
+    :type paginator: Paginator
+    :param page_number: Numer strony do pobrania
+    :type page_number: Optional[str]
+    :return: Obiekt strony z paginatora
+    :rtype: Page
     """
     try:
         return paginator.page(page_number)
@@ -55,6 +73,15 @@ def json_paginated_response(
 ) -> JsonResponse:
     """
     Buduje jednolitą odpowiedź JSON dla paginowanych endpointów.
+    
+    :param items: Lista elementów do zwrócenia w odpowiedzi
+    :type items: List
+    :param paginator: Obiekt paginatora Django
+    :type paginator: Paginator
+    :param page_obj: Obiekt strony z paginatora
+    :type page_obj: Page
+    :return: Odpowiedź HTTP w formacie JSON z paginowanymi danymi
+    :rtype: JsonResponse
     """
     return JsonResponse(
         {
@@ -74,6 +101,11 @@ def json_paginated_response(
 def list_cuisines(request):
     """
     Zwraca listę nazw wszystkich kuchni.
+    
+    :param request: Obiekt żądania HTTP
+    :type request: HttpRequest
+    :return: Lista nazw kuchni w formacie JSON
+    :rtype: JsonResponse
     """
     names = list(Cuisine.objects.values_list("name", flat=True))
     return JsonResponse(names, safe=False)
@@ -82,6 +114,11 @@ def list_cuisines(request):
 def list_diets(request):
     """
     Zwraca listę nazw wszystkich diet.
+    
+    :param request: Obiekt żądania HTTP
+    :type request: HttpRequest
+    :return: Lista nazw diet w formacie JSON
+    :rtype: JsonResponse
     """
     names = list(Diet.objects.values_list("name", flat=True))
     return JsonResponse(names, safe=False)
@@ -91,6 +128,11 @@ def list_ingredients(request):
     """
     Zwraca paginowaną listę nazw składników,
     z opcjonalnym filtrowaniem po wyszukiwanym ciągu.
+    
+    :param request: Obiekt żądania HTTP z parametrami: page, per_page, search
+    :type request: HttpRequest
+    :return: Paginowana lista nazw składników w formacie JSON
+    :rtype: JsonResponse
     """
     page = request.GET.get("page")
     per_page = clamp_int(
@@ -112,6 +154,11 @@ def list_ingredients(request):
 def serialize_recipe(recipe: Recipe) -> dict:
     """
     Serializuje instancję Recipe do słownika JSON-owalnego.
+    
+    :param recipe: Obiekt przepisu do serializacji
+    :type recipe: Recipe
+    :return: Słownik z danymi przepisu gotowy do konwersji na JSON
+    :rtype: dict
     """
     return {
         "name": recipe.name,
@@ -132,6 +179,11 @@ class RecipeListView(View):
     def get(self, request):
         """
         Obsługuje GET: zwraca paginowaną listę przepisów.
+        
+        :param request: Obiekt żądania HTTP z parametrami: page, per_page
+        :type request: HttpRequest
+        :return: Paginowana lista przepisów w formacie JSON
+        :rtype: JsonResponse
         """
         page = request.GET.get("page")
         per_page = clamp_int(
@@ -160,6 +212,12 @@ class RecipeFilterView(View):
     def get(self, request):
         """
         Obsługuje GET: filtruje i sortuje przepisy na podstawie parametrów zapytania.
+        
+        :param request: Obiekt żądania HTTP z parametrami filtrowania, sortowania i paginacji
+        :type request: HttpRequest
+        :return: Przefiltrowana i posortowana paginowana lista przepisów
+        :rtype: JsonResponse
+        :raises ValueError: Gdy podany parametr order_by jest nieprawidłowy
         """
         page = request.GET.get("page")
         per_page = clamp_int(
@@ -220,6 +278,14 @@ def apply_ordering(qs, order_by: str):
     Zastosuj kolejność dla querysetu przepisów na podstawie dozwolonych pól:
     name, cuisine, diet, ingredients_count.
     Prefix '-' dla porządku malejącego.
+    
+    :param qs: QuerySet z przepisami do posortowania
+    :type qs: QuerySet
+    :param order_by: Pole po którym sortować, opcjonalnie z prefixem '-'
+    :type order_by: str
+    :return: Posortowany QuerySet
+    :rtype: QuerySet
+    :raises ValueError: Gdy podane pole sortowania nie jest dozwolone
     """
     allowed = {
         "name": "name",
