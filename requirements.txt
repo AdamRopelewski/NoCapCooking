@@ -3,3 +3,4 @@ django-cors-headers==4.7.0
 python-dotenv==1.0.1
 pillow==11.1.0
 black==25.1.0
+pdoc==15.0.3
