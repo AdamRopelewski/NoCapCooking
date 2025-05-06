@@ -78,7 +78,7 @@ instance/
 .scrapy
 
 # Pdoc documentation
-docs
+docs/
 
 # PyBuilder
 .pybuilder/
