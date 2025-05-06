@@ -7,9 +7,22 @@ from core.models import Ingredient, Cuisine, Diet, Recipe
 
 
 class Command(BaseCommand):
+    """
+    Komenda Django do importowania przepisów kulinarnych z plików JSON.
+    
+    Odczytuje pliki JSON z określonego katalogu i tworzy odpowiednie obiekty
+    w bazie danych (przepisy, składniki, kuchnie i diety).
+    """
+
     help = "Import recipes from JSON files in a given directory"
 
     def add_arguments(self, parser):
+        """
+        Konfiguruje argumenty linii poleceń dla komendy.
+        
+        :param parser: Parser argumentów linii poleceń
+        :type parser: argparse.ArgumentParser
+        """
         parser.add_argument(
             "json_dir",
             type=str,
@@ -17,6 +30,13 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        """
+        Główna metoda wykonująca import przepisów z plików JSON.
+        
+        :param options: Słownik zawierający opcje przekazane do komendy
+        :type options: dict
+        :raises CommandError: Gdy podana ścieżka nie jest katalogiem
+        """
         json_dir = options["json_dir"]
 
         if not os.path.isdir(json_dir):
