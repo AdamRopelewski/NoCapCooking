@@ -1,4 +1,4 @@
-name: Django CI tests
+name: Run Django tests
 
 on:
   push:
@@ -11,12 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Prepare environment
+      - name: Set up environment file
         run: cp .env.example .env
 
-      - name: Run Django test suite
+      - name: Run Django tests
         run: |
           docker compose -f compose-dev.yaml run --rm --build devcontainer python manage.py test

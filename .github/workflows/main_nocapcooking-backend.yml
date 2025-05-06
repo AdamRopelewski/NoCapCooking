@@ -78,4 +78,3 @@ jobs:
         with:
           app-name: 'nocapcooking-backend'
           slot-name: 'Production'
-          

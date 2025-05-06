@@ -1,4 +1,4 @@
-name: Deploy docs to GitHub Pages
+name: Build and deploy docs to GitHub Pages
 
 on:
   push:
@@ -11,12 +11,12 @@ permissions:
 
 jobs:
   build:
+    name: Build documentation artifact
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Build and run services
+      - name: Build and start services
         run: |
           docker compose -f compose-dev.yaml up --build -d
 
@@ -24,11 +24,11 @@ jobs:
         run: |
           docker compose -f compose-dev.yaml exec devcontainer python generate-docs.py
 
-      - name: Copy docs to host
+      - name: Copy generated docs to host
         run: |
           docker compose -f compose-dev.yaml cp devcontainer:/app/docs .
 
-      - name: Teardown services
+      - name: Stop and remove services
         run: |
           docker compose -f compose-dev.yaml down --volumes
 
@@ -38,6 +38,7 @@ jobs:
           path: docs/
 
   deploy:
+    name: Deploy docs to GitHub Pages
     needs: build
     runs-on: ubuntu-latest
     environment:
