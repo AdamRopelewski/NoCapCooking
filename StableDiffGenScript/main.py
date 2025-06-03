@@ -13,8 +13,8 @@ from io import BytesIO
 input_directory = "json-input/"
 
 # Define the URL of the Stable Diffusion API endpoint
-# api_url = "http://127.0.0.1:7860/sdapi/v1/txt2img"
-api_url = "https://art.thedavesky.com/sdapi/v1/txt2img"
+api_url = "http://127.0.0.1:7860/sdapi/v1/txt2img"
+
 
 
 # Function to generate image for a given recipe
